@@ -130,7 +130,10 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_API_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // *** DÁN URL APPS SCRIPT CỦA BẠN VÀO ĐÂY ***
+        // *** THAY ĐỔI DUY NHẤT TRONG index.html CHO LẦN TEST NÀY ***
+        const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // Dán URL Apps Script gốc của bạn vào đây
+        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // Thêm CORS Proxy
+        const APPS_SCRIPT_API_URL = CORS_PROXY_URL + APPS_SCRIPT_BASE_URL; // Kết hợp Proxy và URL gốc
 
         const makeInput = document.getElementById('make');
         const modelInput = document.getElementById('model');
@@ -144,7 +147,7 @@
         let allMakes = [];
         let allModels = [];
 
-        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (dùng GET)
+        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (dùng GET qua Proxy)
         async function fetchAllSuggestionsData() {
             try {
                 const response = await fetch(`${APPS_SCRIPT_API_URL}?action=getAllCarDataForSuggestions`);
@@ -206,11 +209,14 @@
             aiResultsDiv.style.display = 'none'; // Ẩn phần AI results ban đầu
 
             try {
-                // *** THAY ĐỔI QUAN TRỌNG: Gửi yêu cầu POST cho getCarInfo ***
+                // Gửi yêu cầu POST cho getCarInfo qua Proxy
                 const response = await fetch(APPS_SCRIPT_API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        // Khi dùng proxy, proxy sẽ thêm header Origin.
+                        // Bạn KHÔNG cần thêm header Origin thủ công ở đây nếu proxy xử lý.
+                        // Nếu cors-anywhere.herokuapp.com báo lỗi, bạn có thể cần thêm header 'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         action: 'getCarInfo',

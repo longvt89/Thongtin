@@ -118,7 +118,7 @@
         </form>
 
         <div id="results">
-            <p>Thông tin sẽ ở đây sau khi bạn kiểm tra.</p>
+            <p>Thông tin sẽ hiển thị ở đây sau khi bạn kiểm tra.</p>
         </div>
 
         <div id="ai-results" style="display: none;">
@@ -130,7 +130,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_API_URL ='https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // *** DÁN URL APPS SCRIPT CỦA BẠN VÀO ĐÂY ***
+        const APPS_SCRIPT_API_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // *** DÁN URL APPS SCRIPT CỦA BẠN VÀO ĐÂY ***
 
         const makeInput = document.getElementById('make');
         const modelInput = document.getElementById('model');
@@ -144,7 +144,7 @@
         let allMakes = [];
         let allModels = [];
 
-        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang
+        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (dùng GET)
         async function fetchAllSuggestionsData() {
             try {
                 const response = await fetch(`${APPS_SCRIPT_API_URL}?action=getAllCarDataForSuggestions`);
@@ -206,14 +206,25 @@
             aiResultsDiv.style.display = 'none'; // Ẩn phần AI results ban đầu
 
             try {
-                const response = await fetch(`${APPS_SCRIPT_API_URL}?action=getCarInfo&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+                // *** THAY ĐỔI QUAN TRỌNG: Gửi yêu cầu POST cho getCarInfo ***
+                const response = await fetch(APPS_SCRIPT_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'getCarInfo',
+                        make: make,
+                        model: model
+                    })
+                });
+
                 if (!response.ok) {
                     throw new Error(`Lỗi HTTP: ${response.status}`);
                 }
                 const data = await response.json();
 
                 if (data['Thông báo'] && data['Thông báo'].includes('Không tìm thấy thông tin')) {
-                    // Nếu không tìm thấy trong dữ liệu chính, hiển thị công cụ AI (Google Search)
                     resultsDiv.innerHTML = `<p class="error">Không tìm thấy thông tin cho xe '${make} ${model}' trong dữ liệu của bạn.</p>`;
                     aiResultsDiv.style.display = 'block';
 
@@ -231,7 +242,7 @@
                         <p><strong>Dòng xe (Loại lốp):</strong> ${data['Dòng xe (Loại lốp)'] || 'Không có thông tin'}</p>
                         <p><strong>Giá lốp tham khảo:</strong> ${data['Giá lốp tham khảo'] || 'Không có thông tin giá'}</p>
                     `;
-                    aiResultsDiv.style.display = 'none'; // Ẩn nếu tìm thấy
+                    aiResultsDiv.style.display = 'none';
                 }
 
             } catch (error) {

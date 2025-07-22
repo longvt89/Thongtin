@@ -130,136 +130,144 @@
     </div>
 
     <script>
-        // *** Dán URL Web App (Deployment URL) từ Google Apps Script của bạn vào đây ***
-        const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // Ví dụ: 'https://script.google.com/macros/s/AKfyc.../exec'
-        
-        // CORS Proxy: Giữ nguyên hoặc xóa nếu Google Apps Script hoạt động không cần proxy
-        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
-        const APPS_SCRIPT_API_URL = CORS_PROXY_URL + APPS_SCRIPT_BASE_URL; // Kết hợp Proxy và URL gốc
+    // *** Dán URL Web App (Deployment URL) từ Google Apps Script của bạn vào đây ***
+    // Đảm bảo URL này là từ bước triển khai Google Apps Script của bạn (ví dụ: https://script.google.com/macros/s/AKfyc.../exec)
+    const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; 
+    
+    // Đã loại bỏ CORS_PROXY_URL và APPS_SCRIPT_API_URL vì chúng ta sẽ gọi trực tiếp Apps Script.
+    // Nếu bạn vẫn gặp lỗi sau khi thay đổi này, hãy kiểm tra lại cài đặt triển khai Apps Script: "Execute as: Me" và "Who has access: Anyone".
 
-        const makeInput = document.getElementById('make');
-        const modelInput = document.getElementById('model');
-        const suggestionsMakeList = document.getElementById('suggestionsMake');
-        const suggestionsModelList = document.getElementById('suggestionsModel');
-        const resultsDiv = document.getElementById('results');
-        const aiResultsDiv = document.getElementById('ai-results');
-        const googleSearchButton = document.getElementById('googleSearchButton');
-        const googleSearchQueryP = document.getElementById('googleSearchQuery');
+    const makeInput = document.getElementById('make');
+    const modelInput = document.getElementById('model');
+    const suggestionsMakeList = document.getElementById('suggestionsMake');
+    const suggestionsModelList = document.getElementById('suggestionsModel');
+    const resultsDiv = document.getElementById('results');
+    const aiResultsDiv = document.getElementById('ai-results');
+    const googleSearchButton = document.getElementById('googleSearchButton');
+    const googleSearchQueryP = document.getElementById('googleSearchQuery');
 
-        let allMakes = [];
-        let allModels = [];
+    let allMakes = [];
+    let allModels = [];
 
-        async function fetchAllSuggestionsData() {
-            try {
-                const response = await fetch(`${APPS_SCRIPT_API_URL}?action=getAllCarDataForSuggestions`);
-                if (!response.ok) {
-                    throw new Error(`Lỗi HTTP: ${response.status}`);
-                }
-                const data = await response.json();
-                if (data.error) {
-                    console.error('Lỗi khi tải dữ liệu gợi ý:', data.error);
-                } else {
-                    allMakes = data.makes;
-                    allModels = data.models;
-                }
-            } catch (error) {
-                console.error('Lỗi khi fetch dữ liệu gợi ý:', error);
+    // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (gọi trực tiếp Apps Script)
+    async function fetchAllSuggestionsData() {
+        try {
+            const response = await fetch(`${APPS_SCRIPT_BASE_URL}?action=getAllCarDataForSuggestions`); // Gọi trực tiếp URL Apps Script
+            if (!response.ok) {
+                throw new Error(`Lỗi HTTP: ${response.status}`);
             }
+            const data = await response.json();
+            if (data.error) {
+                console.error('Lỗi khi tải dữ liệu gợi ý:', data.error);
+            } else {
+                allMakes = data.makes;
+                allModels = data.models;
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch dữ liệu gợi ý:', error);
         }
+    }
 
-        fetchAllSuggestionsData();
+    // Thực thi khi tải trang
+    fetchAllSuggestionsData();
 
-        function handleClientSideSuggestions(inputElement, suggestionsListElement, sourceArray) {
-            inputElement.addEventListener('input', function() {
-                const partialInput = this.value.toUpperCase();
-                suggestionsListElement.innerHTML = '';
-                if (partialInput.length >= 2) {
-                    const filteredSuggestions = sourceArray.filter(item =>
-                        item.toUpperCase().includes(partialInput)
-                    ).slice(0, 10);
+    // Hàm chung để xử lý gợi ý phía client
+    function handleClientSideSuggestions(inputElement, suggestionsListElement, sourceArray) {
+        inputElement.addEventListener('input', function() {
+            const partialInput = this.value.toUpperCase();
+            suggestionsListElement.innerHTML = ''; // Xóa gợi ý cũ
+            if (partialInput.length >= 2) { // Bắt đầu gợi ý khi nhập ít nhất 2 ký tự
+                const filteredSuggestions = sourceArray.filter(item =>
+                    item.toUpperCase().includes(partialInput)
+                ).slice(0, 10); // Giới hạn 10 gợi ý
 
-                    if (filteredSuggestions.length > 0) {
-                        filteredSuggestions.forEach(function(suggestion) {
-                            const li = document.createElement('li');
-                            li.textContent = suggestion;
-                            li.addEventListener('click', function() {
-                                inputElement.value = suggestion;
-                                suggestionsListElement.innerHTML = '';
-                            });
-                            suggestionsListElement.appendChild(li);
+                if (filteredSuggestions.length > 0) {
+                    filteredSuggestions.forEach(function(suggestion) {
+                        const li = document.createElement('li');
+                        li.textContent = suggestion;
+                        li.addEventListener('click', function() {
+                            inputElement.value = suggestion;
+                            suggestionsListElement.innerHTML = ''; // Ẩn danh sách gợi ý
                         });
-                    }
+                        suggestionsListElement.appendChild(li);
+                    });
                 }
+            }
+        });
+    }
+
+    // Kích hoạt gợi ý cho Hãng Xe
+    handleClientSideSuggestions(makeInput, suggestionsMakeList, allMakes);
+
+    // Kích hoạt gợi ý cho Dòng Xe
+    handleClientSideSuggestions(modelInput, suggestionsModelList, allModels);
+
+    document.getElementById('carInfoForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const make = makeInput.value;
+        const model = modelInput.value;
+        resultsDiv.innerHTML = '<p>Đang tìm kiếm thông tin...</p>';
+        aiResultsDiv.style.display = 'none'; // Ẩn phần AI results ban đầu
+
+        try {
+            // Gửi yêu cầu POST cho getCarInfo (gọi trực tiếp Apps Script)
+            const response = await fetch(APPS_SCRIPT_BASE_URL, { // Gọi trực tiếp URL Apps Script
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'getCarInfo',
+                    make: make,
+                    model: model
+                })
             });
-        }
 
-        handleClientSideSuggestions(makeInput, suggestionsMakeList, allMakes);
-        handleClientSideSuggestions(modelInput, suggestionsModelList, allModels);
+            if (!response.ok) {
+                throw new Error(`Lỗi HTTP: ${response.status}`);
+            }
+            const data = await response.json();
 
-        document.getElementById('carInfoForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
+            if (data['Thông báo'] && data['Thông báo'].includes('Không tìm thấy thông tin')) {
+                resultsDiv.innerHTML = `<p class="error">Không tìm thấy thông tin cho xe '${make} ${model}' trong dữ liệu của bạn.</p>`;
+                aiResultsDiv.style.display = 'block';
 
-            const make = makeInput.value;
-            const model = modelInput.value;
-            resultsDiv.innerHTML = '<p>Đang tìm kiếm thông tin...</p>';
-            aiResultsDiv.style.display = 'none';
+                const searchQuery = `${make} ${model} size lốp giá tham khảo`;
+                googleSearchQueryP.textContent = `Tìm kiếm: "${searchQuery}"`;
+                googleSearchButton.onclick = () => {
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+                };
 
-            try {
-                const response = await fetch(APPS_SCRIPT_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'getCarInfo',
-                        make: make,
-                        model: model
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Lỗi HTTP: ${response.status}`);
-                }
-                const data = await response.json();
-
-                if (data['Thông báo'] && data['Thông báo'].includes('Không tìm thấy thông tin')) {
-                    resultsDiv.innerHTML = `<p class="error">Không tìm thấy thông tin cho xe '${make} ${model}' trong dữ liệu của bạn.</p>`;
-                    aiResultsDiv.style.display = 'block';
-
-                    const searchQuery = `${make} ${model} size lốp giá tham khảo`;
-                    googleSearchQueryP.textContent = `Tìm kiếm: "${searchQuery}"`;
-                    googleSearchButton.onclick = () => {
-                        window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
-                    };
-
-                } else if (data['Thông báo']) {
-                    resultsDiv.innerHTML = `<p class="error"><strong>Lỗi:</strong> ${data['Thông báo']}</p>`;
-                } else {
-                    resultsDiv.innerHTML = `
-                        <p><strong>Hãng xe:</strong> ${data['Hãng xe'] || 'Không có thông tin'}</p>
-                        <p><strong>Dòng xe:</strong> ${data['Dòng xe'] || 'Không có thông tin'}</p>
-                        <p><strong>Kích thước lốp:</strong> ${data['Kích thước lốp'] || 'Không có thông tin'}</p>
-                        <p><strong>Dòng xe (Loại lốp):</strong> ${data['Dòng xe (Loại lốp)'] || 'Không có thông tin'}</p>
-                        <p><strong>Giá lốp tham khảo:</strong> ${data['Giá lốp tham khảo'] || 'Không có thông tin giá'}</p>
-                    `;
-                    aiResultsDiv.style.display = 'none';
-                }
-
-            } catch (error) {
-                console.error('Lỗi khi tra cứu thông tin xe:', error);
-                resultsDiv.innerHTML = `<p class="error">Đã xảy ra lỗi khi tra cứu thông tin. Vui lòng thử lại sau. (${error.message})</p>`;
+            } else if (data['Thông báo']) {
+                resultsDiv.innerHTML = `<p class="error"><strong>Lỗi:</strong> ${data['Thông báo']}</p>`;
+            } else {
+                resultsDiv.innerHTML = `
+                    <p><strong>Hãng xe:</strong> ${data['Hãng xe'] || 'Không có thông tin'}</p>
+                    <p><strong>Dòng xe:</strong> ${data['Dòng xe'] || 'Không có thông tin'}</p>
+                    <p><strong>Kích thước lốp:</strong> ${data['Kích thước lốp'] || 'Không có thông tin'}</p>
+                    <p><strong>Dòng xe (Loại lốp):</strong> ${data['Dòng xe (Loại lốp)'] || 'Không có thông tin'}</p>
+                    <p><strong>Giá lốp tham khảo:</strong> ${data['Giá lốp tham khảo'] || 'Không có thông tin giá'}</p>
+                `;
                 aiResultsDiv.style.display = 'none';
             }
-        });
 
-        document.addEventListener('click', function(event) {
-            if (!makeInput.contains(event.target) && !suggestionsMakeList.contains(event.target)) {
-                suggestionsMakeList.innerHTML = '';
-            }
-            if (!modelInput.contains(event.target) && !suggestionsModelList.contains(event.target)) {
-                suggestionsModelList.innerHTML = '';
-            }
-        });
-    </script>
+        } catch (error) {
+            console.error('Lỗi khi tra cứu thông tin xe:', error);
+            resultsDiv.innerHTML = `<p class="error">Đã xảy ra lỗi khi tra cứu thông tin. Vui lòng thử lại sau. (${error.message})</p>`;
+            aiResultsDiv.style.display = 'none';
+        }
+    });
+
+    // Ẩn gợi ý khi người dùng nhấp ra ngoài input hoặc list gợi ý
+    document.addEventListener('click', function(event) {
+        if (!makeInput.contains(event.target) && !suggestionsMakeList.contains(event.target)) {
+            suggestionsMakeList.innerHTML = '';
+        }
+        if (!modelInput.contains(event.target) && !suggestionsModelList.contains(event.target)) {
+            suggestionsModelList.innerHTML = '';
+        }
+    });
+</script>
 </body>
 </html>

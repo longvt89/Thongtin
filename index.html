@@ -131,11 +131,10 @@
 
     <script>
     // *** Dán URL Web App (Deployment URL) từ Google Apps Script của bạn vào đây ***
-    // Đảm bảo URL này là từ bước triển khai Google Apps Script của bạn (ví dụ: https://script.google.com/macros/s/AKfyc.../exec)
+    // Ví dụ: 'https://script.google.com/macros/s/AKfyc.../exec'
     const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; 
     
-    // Đã loại bỏ CORS_PROXY_URL và APPS_SCRIPT_API_URL vì chúng ta sẽ gọi trực tiếp Apps Script.
-    // Nếu bạn vẫn gặp lỗi sau khi thay đổi này, hãy kiểm tra lại cài đặt triển khai Apps Script: "Execute as: Me" và "Who has access: Anyone".
+    // Đã loại bỏ CORS_PROXY_URL và APPS_SCRIPT_API_URL vì Apps Script đã xử lý CORS.
 
     const makeInput = document.getElementById('make');
     const modelInput = document.getElementById('model');
@@ -152,19 +151,24 @@
     // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (gọi trực tiếp Apps Script)
     async function fetchAllSuggestionsData() {
         try {
-            const response = await fetch(`${APPS_SCRIPT_BASE_URL}?action=getAllCarDataForSuggestions`); // Gọi trực tiếp URL Apps Script
+            // Gọi trực tiếp URL Apps Script
+            const response = await fetch(`${APPS_SCRIPT_BASE_URL}?action=getAllCarDataForSuggestions`); 
             if (!response.ok) {
-                throw new Error(`Lỗi HTTP: ${response.status}`);
+                // Xử lý lỗi HTTP rõ ràng hơn
+                const errorText = await response.text();
+                throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Phản hồi: ${errorText}`);
             }
             const data = await response.json();
             if (data.error) {
                 console.error('Lỗi khi tải dữ liệu gợi ý:', data.error);
+                resultsDiv.innerHTML = `<p class="error">Lỗi khi tải gợi ý: ${data.error}</p>`;
             } else {
                 allMakes = data.makes;
                 allModels = data.models;
             }
         } catch (error) {
             console.error('Lỗi khi fetch dữ liệu gợi ý:', error);
+            resultsDiv.innerHTML = `<p class="error">Đã xảy ra lỗi khi tải dữ liệu gợi ý. Vui lòng thử lại sau. (${error.message})</p>`;
         }
     }
 
@@ -225,7 +229,9 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Lỗi HTTP: ${response.status}`);
+                // Xử lý lỗi HTTP rõ ràng hơn
+                const errorText = await response.text();
+                throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Phản hồi: ${errorText}`);
             }
             const data = await response.json();
 

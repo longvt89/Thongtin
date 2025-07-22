@@ -1,98 +1,277 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tra Cứu Lốp Xe</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      padding: 30px;
-      max-width: 500px;
-      margin: auto;
-    }
-    h1 {
-      text-align: center;
-      color: #007BFF;
-    }
-    label {
-      font-weight: bold;
-    }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      font-size: 16px;
-    }
-    #result {
-      margin-top: 20px;
-      background: #e3f2fd;
-      padding: 15px;
-      border-radius: 5px;
-    }
-    .error {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Kiểm Tra Thông Tin Lốp Xe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .suggestions-list {
+            border: 1px solid #ccc;
+            border-top: none;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            z-index: 1000;
+            background-color: white;
+            width: calc(100% - 2px);
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .suggestions-list li {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .suggestions-list li:hover {
+            background-color: #f0f0f0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results, #ai-results {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+        #results p, #ai-results p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        #results p strong, #ai-results p strong {
+            color: #0056b3;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <h1>Tra Cứu Thông Tin Lốp Xe</h1>
-  <label>Hãng Xe:</label>
-  <input type="text" id="make" placeholder="Ví dụ: Toyota">
+    <div class="container">
+        <h1>Phiếu Kiểm Tra Thông Tin Lốp Xe</h1>
+        <form id="carInfoForm">
+            <label for="make">Hãng Xe:</label>
+            <div class="input-wrapper">
+                <input type="text" id="make" name="make" placeholder="Ví dụ: BMW" required>
+                <ul id="suggestionsMake" class="suggestions-list"></ul>
+            </div>
 
-  <label>Dòng Xe:</label>
-  <input type="text" id="model" placeholder="Ví dụ: Vios">
+            <label for="model">Dòng Xe:</label>
+            <div class="input-wrapper">
+                <input type="text" id="model" name="model" placeholder="Ví dụ: X6" required>
+                <ul id="suggestionsModel" class="suggestions-list"></ul>
+            </div>
 
-  <button onclick="searchTire()">Tra Cứu</button>
+            <button type="submit">Kiểm Tra</button>
+        </form>
 
-  <div id="result"></div>
+        <div id="results">
+            <p>Thông tin sẽ hiển thị ở đây sau khi bạn kiểm tra.</p>
+        </div>
 
-  <script>
-    const CORS_PROXY = 'https://corsproxy.io/?';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec';
+        <div id="ai-results" style="display: none;">
+            <h2>Kết quả tham khảo từ Internet</h2>
+            <p>Không tìm thấy trong dữ liệu chính. Bạn có thể tra cứu nhanh trên Google:</p>
+            <button id="googleSearchButton">Tra cứu trên Google</button>
+            <p id="googleSearchQuery"></p>
+        </div>
+    </div>
 
-    async function searchTire() {
-      const make = document.getElementById('make').value.trim();
-      const model = document.getElementById('model').value.trim();
-      const resultDiv = document.getElementById('result');
+    <script>
+        // !!! QUAN TRỌNG: Thay thế URL này bằng URL Web App đã triển khai từ Google Apps Script của bạn (cho tra cứu lốp) !!!
+        const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbzeyVRNkCogFjA7mXFZvqY-QqcJ-Uz5WOOdChnPbdQHVHjsxYOxSzZv06QFsv5L3tsiGQ/exec'; 
+        
+        // Đã loại bỏ CORS_PROXY_URL và APPS_SCRIPT_API_URL.
+        // Apps Script khi được triển khai là Web App với quyền "Anyone" thường sẽ tự động xử lý CORS.
 
-      if (!make || !model) {
-        resultDiv.innerHTML = '<p class="error">Vui lòng nhập đầy đủ Hãng xe và Dòng xe.</p>';
-        return;
-      }
+        const makeInput = document.getElementById('make');
+        const modelInput = document.getElementById('model');
+        const suggestionsMakeList = document.getElementById('suggestionsMake');
+        const suggestionsModelList = document.getElementById('suggestionsModel');
+        const resultsDiv = document.getElementById('results');
+        const aiResultsDiv = document.getElementById('ai-results');
+        const googleSearchButton = document.getElementById('googleSearchButton');
+        const googleSearchQueryP = document.getElementById('googleSearchQuery');
 
-      resultDiv.innerHTML = 'Đang tra cứu...';
+        let allMakes = [];
+        let allModels = [];
 
-      try {
-        const response = await fetch(CORS_PROXY + SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'getCarInfo',
-            make: make,
-            model: model
-          })
+        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (gọi trực tiếp Apps Script)
+        async function fetchAllSuggestionsData() {
+            try {
+                // Gọi trực tiếp URL Apps Script
+                const response = await fetch(`${APPS_SCRIPT_BASE_URL}?action=getAllCarDataForSuggestions`); 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Phản hồi: ${errorText}`);
+                }
+                const data = await response.json();
+                if (data.error) {
+                    console.error('Lỗi khi tải dữ liệu gợi ý:', data.error);
+                    resultsDiv.innerHTML = `<p class="error">Lỗi khi tải gợi ý: ${data.error}</p>`;
+                } else {
+                    allMakes = data.makes;
+                    allModels = data.models;
+                }
+            } catch (error) {
+                console.error('Lỗi khi fetch dữ liệu gợi ý:', error);
+                resultsDiv.innerHTML = `<p class="error">Đã xảy ra lỗi khi tải dữ liệu gợi ý. Vui lòng thử lại sau. (${error.message})</p>`;
+            }
+        }
+
+        // Thực thi khi tải trang
+        fetchAllSuggestionsData();
+
+        // Hàm chung để xử lý gợi ý phía client
+        function handleClientSideSuggestions(inputElement, suggestionsListElement, sourceArray) {
+            inputElement.addEventListener('input', function() {
+                const partialInput = this.value.toUpperCase();
+                suggestionsListElement.innerHTML = ''; // Xóa gợi ý cũ
+                if (partialInput.length >= 2) { // Bắt đầu gợi ý khi nhập ít nhất 2 ký tự
+                    const filteredSuggestions = sourceArray.filter(item =>
+                        item.toUpperCase().includes(partialInput)
+                    ).slice(0, 10); // Giới hạn 10 gợi ý
+
+                    if (filteredSuggestions.length > 0) {
+                        filteredSuggestions.forEach(function(suggestion) {
+                            const li = document.createElement('li');
+                            li.textContent = suggestion;
+                            li.addEventListener('click', function() {
+                                inputElement.value = suggestion;
+                                suggestionsListElement.innerHTML = ''; // Ẩn danh sách gợi ý
+                            });
+                            suggestionsListElement.appendChild(li);
+                        });
+                    }
+                }
+            });
+        }
+
+        // Kích hoạt gợi ý cho Hãng Xe
+        handleClientSideSuggestions(makeInput, suggestionsMakeList, allMakes);
+
+        // Kích hoạt gợi ý cho Dòng Xe
+        handleClientSideSuggestions(modelInput, suggestionsModelList, allModels);
+
+        document.getElementById('carInfoForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const make = makeInput.value;
+            const model = modelInput.value;
+            resultsDiv.innerHTML = '<p>Đang tìm kiếm thông tin...</p>';
+            aiResultsDiv.style.display = 'none'; // Ẩn phần AI results ban đầu
+
+            try {
+                // Gửi yêu cầu POST cho getCarInfo (gọi trực tiếp Apps Script)
+                const response = await fetch(APPS_SCRIPT_BASE_URL, { // Gọi trực tiếp URL Apps Script
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'getCarInfo',
+                        make: make,
+                        model: model
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Phản hồi: ${errorText}`);
+                }
+                const data = await response.json();
+
+                if (data['Thông báo'] && data['Thông báo'].includes('Không tìm thấy thông tin')) {
+                    resultsDiv.innerHTML = `<p class="error">Không tìm thấy thông tin cho xe '${make} ${model}' trong dữ liệu của bạn.</p>`;
+                    aiResultsDiv.style.display = 'block';
+
+                    const searchQuery = `${make} ${model} size lốp giá tham khảo`;
+                    googleSearchQueryP.textContent = `Tìm kiếm: "${searchQuery}"`;
+                    googleSearchButton.onclick = () => {
+                        window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+                    };
+
+                } else if (data['Thông báo']) {
+                    resultsDiv.innerHTML = `<p class="error"><strong>Lỗi:</strong> ${data['Thông báo']}</p>`;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <p><strong>Hãng xe:</strong> ${data['Hãng xe'] || 'Không có thông tin'}</p>
+                        <p><strong>Dòng xe:</strong> ${data['Dòng xe'] || 'Không có thông tin'}</p>
+                        <p><strong>Kích thước lốp:</strong> ${data['Kích thước lốp'] || 'Không có thông tin'}</p>
+                        <p><strong>Dòng xe (Loại lốp):</strong> ${data['Dòng xe (Loại lốp)'] || 'Không có thông tin'}</p>
+                        <p><strong>Giá lốp tham khảo:</strong> ${data['Giá lốp tham khảo'] || 'Không có thông tin giá'}</p>
+                    `;
+                    aiResultsDiv.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Lỗi khi tra cứu thông tin xe:', error);
+                resultsDiv.innerHTML = `<p class="error">Đã xảy ra lỗi khi tra cứu thông tin. Vui lòng thử lại sau. (${error.message})</p>`;
+                aiResultsDiv.style.display = 'none';
+            }
         });
 
-        const data = await response.json();
-
-        if (data['Thông báo']) {
-          resultDiv.innerHTML = `<p class="error">${data['Thông báo']}</p>`;
-        } else {
-          resultDiv.innerHTML = `
-            <p><strong>Hãng Xe:</strong> ${data['Hãng xe']}</p>
-            <p><strong>Dòng Xe:</strong> ${data['Dòng xe']}</p>
-            <p><strong>Kích thước lốp:</strong> ${data['Kích thước lốp']}</p>
-            <p><strong>Loại lốp:</strong> ${data['Dòng xe (Loại lốp)']}</p>
-            <p><strong>Giá tham khảo:</strong> ${data['Giá lốp tham khảo']}</p>
-          `;
-        }
-      } catch (error) {
-        resultDiv.innerHTML = `<p class="error">Lỗi kết nối: ${error.message}</p>`;
-      }
-    }
-  </script>
+        // Ẩn gợi ý khi người dùng nhấp ra ngoài input hoặc list gợi ý
+        document.addEventListener('click', function(event) {
+            if (!makeInput.contains(event.target) && !suggestionsMakeList.contains(event.target)) {
+                suggestionsMakeList.innerHTML = '';
+            }
+            if (!modelInput.contains(event.target) && !suggestionsModelList.contains(event.target)) {
+                suggestionsModelList.innerHTML = '';
+            }
+        });
+    </script>
 </body>
 </html>

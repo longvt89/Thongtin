@@ -132,10 +132,6 @@
     <script>
         // !!! QUAN TRỌNG: Thay thế URL này bằng URL Web App đã triển khai từ Google Apps Script của bạn (cho tra cứu lốp) !!!
         const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbzeyVRNkCogFjA7mXFZvqY-QqcJ-Uz5WOOdChnPbdQHVHjsxYOxSzZv06QFsv5L3tsiGQ/exec'; 
-        
-        // Đã loại bỏ CORS_PROXY_URL và APPS_SCRIPT_API_URL.
-        // Apps Script khi được triển khai là Web App với quyền "Anyone" sẽ tự động xử lý CORS,
-        // và chúng ta đã thêm doOptions và setCorsHeaders để đảm bảo.
 
         const makeInput = document.getElementById('make');
         const modelInput = document.getElementById('model');

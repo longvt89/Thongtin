@@ -130,9 +130,11 @@
     </div>
 
     <script>
-        // *** THAY ĐỔI DUY NHẤT TRONG index.html CHO LẦN TEST NÀY ***
-        const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbyiSe9eGSyKCRtvQdQ3oX7IQZ6hPAsZNmaOmBNwfUfVWvMkwpyQDe7t2uhp5KDyLF3Hwg/exec'; // Dán URL Apps Script gốc của bạn vào đây
-        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // Thêm CORS Proxy
+        // *** Dán URL Web App (Deployment URL) từ Google Apps Script của bạn vào đây ***
+        const APPS_SCRIPT_BASE_URL = 'DÁN_URL_WEB_APP_CỦA_BẠN_VÀO_ĐÂY'; // Ví dụ: 'https://script.google.com/macros/s/AKfyc.../exec'
+        
+        // CORS Proxy: Giữ nguyên hoặc xóa nếu Google Apps Script hoạt động không cần proxy
+        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
         const APPS_SCRIPT_API_URL = CORS_PROXY_URL + APPS_SCRIPT_BASE_URL; // Kết hợp Proxy và URL gốc
 
         const makeInput = document.getElementById('make');
@@ -147,7 +149,6 @@
         let allMakes = [];
         let allModels = [];
 
-        // Lấy tất cả dữ liệu hãng xe và dòng xe cho gợi ý khi tải trang (dùng GET qua Proxy)
         async function fetchAllSuggestionsData() {
             try {
                 const response = await fetch(`${APPS_SCRIPT_API_URL}?action=getAllCarDataForSuggestions`);
@@ -166,18 +167,16 @@
             }
         }
 
-        // Thực thi khi tải trang
         fetchAllSuggestionsData();
 
-        // Hàm chung để xử lý gợi ý phía client
         function handleClientSideSuggestions(inputElement, suggestionsListElement, sourceArray) {
             inputElement.addEventListener('input', function() {
                 const partialInput = this.value.toUpperCase();
-                suggestionsListElement.innerHTML = ''; // Xóa gợi ý cũ
+                suggestionsListElement.innerHTML = '';
                 if (partialInput.length >= 2) {
                     const filteredSuggestions = sourceArray.filter(item =>
                         item.toUpperCase().includes(partialInput)
-                    ).slice(0, 10); // Giới hạn 10 gợi ý
+                    ).slice(0, 10);
 
                     if (filteredSuggestions.length > 0) {
                         filteredSuggestions.forEach(function(suggestion) {
@@ -194,10 +193,7 @@
             });
         }
 
-        // Kích hoạt gợi ý cho Hãng Xe
         handleClientSideSuggestions(makeInput, suggestionsMakeList, allMakes);
-
-        // Kích hoạt gợi ý cho Dòng Xe
         handleClientSideSuggestions(modelInput, suggestionsModelList, allModels);
 
         document.getElementById('carInfoForm').addEventListener('submit', async function(event) {
@@ -206,17 +202,13 @@
             const make = makeInput.value;
             const model = modelInput.value;
             resultsDiv.innerHTML = '<p>Đang tìm kiếm thông tin...</p>';
-            aiResultsDiv.style.display = 'none'; // Ẩn phần AI results ban đầu
+            aiResultsDiv.style.display = 'none';
 
             try {
-                // Gửi yêu cầu POST cho getCarInfo qua Proxy
                 const response = await fetch(APPS_SCRIPT_API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // Khi dùng proxy, proxy sẽ thêm header Origin.
-                        // Bạn KHÔNG cần thêm header Origin thủ công ở đây nếu proxy xử lý.
-                        // Nếu cors-anywhere.herokuapp.com báo lỗi, bạn có thể cần thêm header 'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         action: 'getCarInfo',
@@ -244,6 +236,8 @@
                     resultsDiv.innerHTML = `<p class="error"><strong>Lỗi:</strong> ${data['Thông báo']}</p>`;
                 } else {
                     resultsDiv.innerHTML = `
+                        <p><strong>Hãng xe:</strong> ${data['Hãng xe'] || 'Không có thông tin'}</p>
+                        <p><strong>Dòng xe:</strong> ${data['Dòng xe'] || 'Không có thông tin'}</p>
                         <p><strong>Kích thước lốp:</strong> ${data['Kích thước lốp'] || 'Không có thông tin'}</p>
                         <p><strong>Dòng xe (Loại lốp):</strong> ${data['Dòng xe (Loại lốp)'] || 'Không có thông tin'}</p>
                         <p><strong>Giá lốp tham khảo:</strong> ${data['Giá lốp tham khảo'] || 'Không có thông tin giá'}</p>
@@ -258,7 +252,6 @@
             }
         });
 
-        // Ẩn gợi ý khi người dùng nhấp ra ngoài input hoặc list gợi ý
         document.addEventListener('click', function(event) {
             if (!makeInput.contains(event.target) && !suggestionsMakeList.contains(event.target)) {
                 suggestionsMakeList.innerHTML = '';
